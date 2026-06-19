@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link href="https://fonts.googleapis.com/css2?family=Lato&display=swap" rel="stylesheet">
+  <title>Chi-Square P-Value Calculator</title>
+  <style>
+    body {
+      font-family: 'Lato', sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    input, button {
+      font-family: 'Lato', sans-serif;
+      font-size: 16px;
+      display: block;          /* forces line breaks */
+      margin: 10px auto;         /* adds spacing between elements */
+    }
+
+    label {
+      display: block;
+      margin-top: 12px;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Chi-Square P-Value Calculator</h2>
+
+<label>Chi-square statistic (χ²)</label>
+<input id="chi" type="number" step="any">
+
+<label>Degrees of freedom (df)</label>
+<input id="df" type="number" step="1">
+
+<button onclick="calcP()">Calculate p-value</button>
+
+<div class="result" id="output"></div>
+
+<script>
+// Gamma function approximation + incomplete gamma (needed for chi-square CDF)
+function gamma(z) {
+    let g = 7;
+    let p = [
+      0.99999999999980993,
+      676.5203681218851,
+      -1259.1392167224028,
+      771.32342877765313,
+      -176.61502916214059,
+      12.507343278686905,
+      -0.13857109526572012,
+      9.9843695780195716e-6,
+      1.5056327351493116e-7
+    ];
+
+    if (z < 0.5) return Math.PI / (Math.sin(Math.PI*z) * gamma(1-z));
+
+    z -= 1;
+    let x = p[0];
+    for (let i = 1; i < g + 2; i++) {
+        x += p[i] / (z + i);
+    }
+
+    let t = z + g + 0.5;
+    return Math.sqrt(2*Math.PI) * Math.pow(t, z + 0.5) * Math.exp(-t) * x;
+}
+
+// Regularized lower incomplete gamma (numerical approximation)
+function lowerGammaInc(s, x) {
+    let sum = 1 / s;
+    let value = sum;
+    for (let n = 1; n < 100; n++) {
+        sum *= x / (s + n);
+        value += sum;
+    }
+    return Math.pow(x, s) * Math.exp(-x) * value;
+}
+
+// Chi-square CDF
+function chiSquareCDF(x, k) {
+    return lowerGammaInc(k/2, x/2) / gamma(k/2);
+}
+
+function calcP() {
+    let x = parseFloat(document.getElementById("chi").value);
+    let df = parseFloat(document.getElementById("df").value);
+
+    let cdf = chiSquareCDF(x, df);
+    let p = 1 - cdf;
+
+    document.getElementById("output").innerHTML =
+      "p-value = " + p.toFixed(6);
+}
+</script>
+
+</body>
+</html>
